@@ -10,7 +10,6 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
         self.input_dim = input_dim
         self.n_actions = n_actions
-        # Define the final fully connected layer for generating the action
         self.fc1 = nn.Linear(self.input_dim, 256)  
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, self.n_actions)
@@ -20,21 +19,15 @@ class Actor(nn.Module):
 
     def forward(self, x): 
         x = torch.tensor(x)
-        # Fully connected layers with ReLU activation
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
-        # print(self.fc3(x))
         probs = F.softmax((self.fc3(x)), dim=0)
-        # print(probs)
         return probs
 
-
-# Define the Critic network
 class Critic(nn.Module):
     def __init__(self, input_dim, alpha):
         super(Critic, self).__init__()
         self.input_dim = input_dim
-        # Define the final fully connected layer for generating the action
         self.fc1 = nn.Linear(self.input_dim, 256)  
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 1)
@@ -61,7 +54,6 @@ class Agent():
         self.log_probs = None
         
     def choose_action(self, observation):
-        # x = torch.tensor(observation)
         probs = self.actor.forward(observation)
         action_probs = torch.distributions.Categorical(probs)
         action = action_probs.sample()
@@ -84,14 +76,7 @@ class Agent():
         critic_loss = delta ** 2
         # print(critic_loss)
         actor_loss = -self.log_probs * delta
-        # param = self.actor.parameters()
 
         (actor_loss + critic_loss).backward()
         self.actor.optimizer.step()
         self.critic.optimizer.step()
-
-if __name__ == "__main__":
-    agent = Agent(input_dim=3, n_actions=10)
-    observation = np.array([1, 2, 3], dtype=np.float32)
-    action = agent.choose_action(observation)
-    print(action)
