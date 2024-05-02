@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import numpy as np
+
 
 class policyNet(nn.Module):
     def __init__(self, input_dim, n_action, alpha):
@@ -23,6 +23,7 @@ class policyNet(nn.Module):
         probs = F.softmax(self.fc3(x))
 
         return probs
+
 
 class Agent():
     def __init__(self, input_dim, n_action, alpha, gamma=0.99):
@@ -59,35 +60,8 @@ class Agent():
             G = torch.tensor(G, requires_grad=True)
             loss = -G * self.action_memory[i]
             total_loss += loss
-        print(total_loss)
+        # print(total_loss)
         total_loss.backward()
         self.policy.optim.step()
         self.reward_memory = []
         self.action_memory = []
-    
-    def learn_2(self):
-        self.policy.optim.zero_grad()
-        # Assumes only a single episode for reward_memory
-        G = np.zeros_like(self.reward_memory, dtype=np.float64)
-        for t in range(len(self.reward_memory)):
-            G_sum = 0
-            discount = 1
-            for k in range(t, len(self.reward_memory)):
-                G_sum += self.reward_memory[k] * discount
-                discount *= self.gamma
-            G[t] = G_sum
-        mean = np.mean(G)
-        std = np.std(G) if np.std(G) > 0 else 1
-        # G = (G - mean) / std
-
-        G = torch.tensor(G, dtype=torch.float)
-
-        loss = 0
-        for g, logprob in zip(G, self.action_memory):
-            loss += -g * logprob
-        print(loss)
-        loss.backward()
-        self.policy.optim.step()
-
-        self.action_memory = []
-        self.reward_memory = []
