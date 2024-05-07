@@ -37,11 +37,11 @@ class Agent():
 
     def choose_action(self, observation):
         probs = self.policy.forward(observation)
-        # print(probs)
         action_probs = torch.distributions.Categorical(probs)
         # print(action_probs)
         action = action_probs.sample()
         self.log_probs = action_probs.log_prob(action)
+        # print(self.log_probs)
         self.action_memory.append(self.log_probs)
         return action.item()
     
@@ -49,8 +49,8 @@ class Agent():
         self.reward_memory.append(reward)
     
     def learn(self):
-        total_loss = 0
         self.policy.optim.zero_grad()
+        total_loss = 0
         for i in range(len(self.action_memory)):
             G = 0
             discount = 1
@@ -60,7 +60,7 @@ class Agent():
             G = torch.tensor(G, requires_grad=True)
             loss = -G * self.action_memory[i]
             total_loss += loss
-        # print(total_loss)
+        # print(total_loss.grad)
         total_loss.backward()
         self.policy.optim.step()
         self.reward_memory = []

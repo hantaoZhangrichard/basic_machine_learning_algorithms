@@ -48,7 +48,7 @@ class Critic(nn.Module):
 
 
 class Agent():
-    def __init__(self, input_dims, n_actions, alpha, beta, max_action, gamma=0.99):
+    def __init__(self, input_dims, n_actions, max_action, alpha, beta, gamma=0.99):
         super(Agent, self).__init__()
         self.input_dims = input_dims
         self.n_actions = n_actions
@@ -59,14 +59,19 @@ class Agent():
         self.log_probs = None
         
     def choose_action(self, observation):
-        mu, sigma = self.actor.forward(observation)
-        sigma = torch.exp(sigma)
-        action_probs = torch.distributions.Normal(mu, sigma)
-        probs = action_probs.sample(sample_shape=torch.Size([1]))
-        self.log_probs = action_probs.log_prob(probs)
-        action = torch.tanh(probs) * self.max_action
+        output = self.actor.forward(observation)
+        # print(output)
+        self.log_probs = 0
+        action = np.zeros(self.n_actions)
+        for i in range(int(self.n_actions/2)):
+            mu = output[2*i]
+            sd = torch.exp(output[2*i+1])
+            action_probs = torch.distributions.Normal(mu, sd)
+            probs = action_probs.sample(sample_shape=torch.Size([1]))
+            self.log_probs += action_probs.log_prob(probs)
+            action[i] = torch.tanh(probs).item() * self.max_action
 
-        return action.item()
+        return action
         
     def learn(self, state, reward, new_state, done):
         self.actor.optimizer.zero_grad()

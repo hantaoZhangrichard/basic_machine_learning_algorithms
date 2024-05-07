@@ -120,13 +120,14 @@ class CriticNetwork(nn.Module):
         self.load_state_dict(T.load(self.checkpoint_file))
 
 class ActorNetwork(nn.Module):
-    def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, n_actions, name,
+    def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, n_actions, max_action, name,
                  chkpt_dir='tmp/ddpg'):
         super(ActorNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.n_actions = n_actions
+        self.max_action = max_action
         self.checkpoint_file = os.path.join(chkpt_dir,name+'_ddpg')
         self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
         f1 = 1./np.sqrt(self.fc1.weight.data.size()[0])
@@ -165,7 +166,7 @@ class ActorNetwork(nn.Module):
         x = self.fc2(x)
         x = self.bn2(x)
         x = F.relu(x)
-        x = T.tanh(self.mu(x)) * 2
+        x = T.tanh(self.mu(x)) * self.max_action
 
         return x
 
@@ -178,7 +179,7 @@ class ActorNetwork(nn.Module):
         self.load_state_dict(T.load(self.checkpoint_file))
 
 class Agent(object):
-    def __init__(self, alpha, beta, input_dims, tau, env, gamma=0.99,
+    def __init__(self, alpha, beta, input_dims, tau, env, max_action, gamma=0.99,
                  n_actions=2, max_size=1000000, layer1_size=400,
                  layer2_size=300, batch_size=64):
         self.gamma = gamma
@@ -187,14 +188,14 @@ class Agent(object):
         self.batch_size = batch_size
 
         self.actor = ActorNetwork(alpha, input_dims, layer1_size,
-                                  layer2_size, n_actions=n_actions,
+                                  layer2_size, n_actions=n_actions, max_action=max_action,
                                   name='Actor')
         self.critic = CriticNetwork(beta, input_dims, layer1_size,
                                     layer2_size, n_actions=n_actions,
                                     name='Critic')
 
         self.target_actor = ActorNetwork(alpha, input_dims, layer1_size,
-                                         layer2_size, n_actions=n_actions,
+                                         layer2_size, n_actions=n_actions, max_action=max_action,
                                          name='TargetActor')
         self.target_critic = CriticNetwork(beta, input_dims, layer1_size,
                                            layer2_size, n_actions=n_actions,
